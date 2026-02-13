@@ -9,55 +9,60 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --dark: #1e272e; --tyt: #3498db; --ayt: #9b59b6; --red: #e84118; --bg: #f5f6fa; --grad: linear-gradient(135deg, #6c5ce7, #a29bfe); --green: #2ecc71; }
-        body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; color: var(--dark); }
+        :root { --dark: #1e272e; --tyt: #3498db; --ayt: #9b59b6; --red: #e84118; --bg: #f5f6fa; --green: #2ecc71; --user-color: #6c5ce7; }
+        body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; color: var(--dark); transition: 0.3s; }
         .container { background: white; width: 100%; max-width: 420px; border-radius: 35px; padding: 20px; box-shadow: 0 15px 50px rgba(0,0,0,0.1); }
         
-        .quote-card { background: var(--grad); color: white; padding: 20px; border-radius: 25px; margin-bottom: 20px; position: relative; overflow: hidden; }
-        #dailyQuote { font-size: 14px; font-weight: 600; font-style: italic; line-height: 1.5; margin: 0; position: relative; z-index: 1; }
+        /* Dinamik Quote Kartı */
+        .quote-card { background: var(--user-color); color: white; padding: 20px; border-radius: 25px; margin-bottom: 20px; transition: 0.5s; }
+        #dailyQuote { font-size: 14px; font-weight: 600; font-style: italic; line-height: 1.5; margin: 0; }
         .quote-author { font-size: 11px; opacity: 0.8; margin-top: 8px; display: block; font-weight: 700; text-transform: uppercase; }
 
         .exam-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .stat-card { background: #fff; padding: 12px; border-radius: 20px; text-align: center; border: 1px solid #f1f1f1; }
-        .stat-val { font-size: 15px; font-weight: 800; display: block; margin-bottom: 2px; }
+        .stat-val { font-size: 15px; font-weight: 800; display: block; }
         .stat-label { font-size: 9px; color: #95a5a6; font-weight: 700; text-transform: uppercase; }
 
         .process-card { background: #fff; padding: 15px; border-radius: 20px; text-align: center; border: 1px solid #fceaea; margin-bottom: 20px; }
         .process-val { font-size: 16px; font-weight: 800; color: var(--red); display: block; }
         
+        /* Kullanıcı Seçimi */
         .user-selector { display: flex; gap: 12px; margin-bottom: 20px; }
-        .profile-card { flex: 1; text-align: center; cursor: pointer; opacity: 0.5; transition: 0.3s; padding: 15px; border-radius: 22px; background: #f8f9fa; position: relative; border: 2px solid transparent; }
-        .profile-card.active { opacity: 1; background: #fff; border-color: var(--tyt); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2); }
-        .edit-name-btn { position: absolute; top: 5px; right: 8px; font-size: 12px; color: #ccc; }
+        .profile-card { flex: 1; text-align: center; cursor: pointer; opacity: 0.4; transition: 0.3s; padding: 15px; border-radius: 22px; background: #f8f9fa; position: relative; border: 2px solid transparent; }
+        .profile-card.active { opacity: 1; background: #fff; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        #card-taha.active { border-color: #3498db; }
+        #card-sude.active { border-color: #e84393; }
 
-        textarea { width: 100%; height: 100px; padding: 15px; border-radius: 20px; border: 2px solid #f1f1f1; box-sizing: border-box; font-family: inherit; resize: none; outline: none; font-size: 15px; transition: 0.3s; }
-        textarea:focus { border-color: var(--tyt); }
-
+        textarea { width: 100%; height: 90px; padding: 15px; border-radius: 20px; border: 2px solid #f1f1f1; box-sizing: border-box; font-family: inherit; resize: none; outline: none; font-size: 15px; }
         .custom-file-upload { display: flex; align-items: center; justify-content: center; gap: 8px; background: #f8f9fa; padding: 12px; border-radius: 15px; cursor: pointer; font-weight: 700; font-size: 13px; margin-top: 10px; border: 2px dashed #eee; }
 
-        .save-btn { background: var(--dark); color: white; border: none; padding: 18px; border-radius: 22px; width: 100%; font-weight: 800; cursor: pointer; margin: 15px 0; font-size: 15px; transition: 0.4s; }
-        .save-btn.success { background: var(--green) !important; }
+        .save-btn { background: var(--user-color); color: white; border: none; padding: 18px; border-radius: 22px; width: 100%; font-weight: 800; cursor: pointer; margin: 15px 0; font-size: 15px; transition: 0.4s; }
+        
+        /* Arşiv Akışı (Alt Alta Mesajlar) */
+        .archive-display { margin-bottom: 20px; }
+        .archive-title { font-size: 12px; font-weight: 800; color: #95a5a6; text-transform: uppercase; margin-bottom: 10px; display: block; text-align: center; }
+        .note-bubble { background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 20px; margin-bottom: 10px; position: relative; animation: slideIn 0.3s ease-out; }
+        .note-time { font-size: 10px; color: #ccc; position: absolute; top: 10px; right: 15px; }
+        .note-text { font-size: 14px; color: #2c3e50; line-height: 1.4; white-space: pre-wrap; margin-top: 5px; }
+        .note-img { width: 100%; border-radius: 12px; margin-top: 10px; }
 
-        .archive-display { background: #f9f9f9; border-radius: 25px; padding: 15px; margin-bottom: 20px; border: 1px solid #eee; min-height: 50px; }
-        .archive-title { font-size: 11px; font-weight: 800; color: #95a5a6; text-transform: uppercase; margin-bottom: 10px; display: block; }
-        .archive-content { font-size: 15px; line-height: 1.5; color: #2c3e50; white-space: pre-wrap; }
-        .archive-image { width: 100%; border-radius: 15px; margin-top: 10px; display: block; }
-        .empty-msg { font-style: italic; color: #ccc; font-size: 13px; text-align: center; padding: 10px; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Takvim */
         .calendar-box { background: #fff; border-radius: 25px; padding: 15px; border: 1px solid #f1f1f1; }
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: 800; }
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .cal-day { font-size: 12px; padding: 8px 0; border-radius: 10px; cursor: pointer; text-align: center; position: relative; }
-        .cal-day.selected { background: var(--tyt) !important; color: white !important; font-weight: bold; }
+        .cal-day { font-size: 12px; padding: 8px 0; border-radius: 10px; cursor: pointer; text-align: center; }
+        .cal-day.selected { background: var(--user-color) !important; color: white !important; font-weight: bold; }
         
-        #previewContainer img { width: 100%; border-radius: 20px; margin-top: 10px; border: 2px solid var(--tyt); }
+        #previewContainer img { width: 100%; border-radius: 20px; margin-top: 10px; border: 2px solid var(--user-color); }
         .nav-btn { background: #f1f2f6; border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="quote-card">
+    <div class="quote-card" id="mainQuoteCard">
         <p id="dailyQuote">...</p>
         <span class="quote-author" id="quoteAuthor"></span>
     </div>
@@ -73,29 +78,26 @@
     </div>
 
     <div class="user-selector">
-        <div class="profile-card" id="card-sude" onclick="toggleDiary('sude')">
-            <span class="edit-name-btn" onclick="renameUser('sude', event)">✎</span>
-            <span id="name-sude">...</span>
-        </div>
         <div class="profile-card" id="card-taha" onclick="toggleDiary('taha')">
-            <span class="edit-name-btn" onclick="renameUser('taha', event)">✎</span>
-            <span id="name-taha">...</span>
+            <span id="name-taha">Taha</span>
+        </div>
+        <div class="profile-card" id="card-sude" onclick="toggleDiary('sude')">
+            <span id="name-sude">Sude</span>
         </div>
     </div>
 
     <div id="diary-area" style="display:none;">
-        <textarea id="noteInput" placeholder="Yeni bir şeyler ekle..."></textarea>
+        <textarea id="noteInput" placeholder="Neler başardın?"></textarea>
         <label class="custom-file-upload">
             <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="previewImage()">
-            📸 Fotoğraf Seç
+            📸 Fotoğraf Ekle
         </label>
         <div id="previewContainer"></div>
         <button id="saveButton" class="save-btn" onclick="saveToFirebase()">Günü Arşivle</button>
 
-        <div class="archive-display" id="archiveBox">
-            <span class="archive-title" id="archiveDateTitle">Arşiv</span>
-            <div id="archiveContent" class="archive-content"></div>
-            <div id="archiveImageContainer"></div>
+        <div class="archive-display">
+            <span class="archive-title" id="archiveDateTitle">Günün Akışı</span>
+            <div id="notesFlow"></div>
         </div>
 
         <div class="calendar-box">
@@ -104,10 +106,7 @@
                 <span id="monthYear">...</span>
                 <button class="nav-btn" onclick="changeMonth(1)">›</button>
             </div>
-            <div class="cal-grid">
-                <div class="weekday" style="font-size: 9px; text-align: center; color: #ccc;">PT</div><div class="weekday" style="font-size: 9px; text-align: center; color: #ccc;">SA</div><div class="weekday" style="font-size: 9px; text-align: center; color: #ccc;">ÇA</div><div class="weekday" style="font-size: 9px; text-align: center; color: #ccc;">PE</div><div class="weekday" style="font-size: 9px; text-align: center; color: #ccc;">CU</div><div class="weekday" style="font-size: 9px; text-align: center; color: #ccc;">CT</div><div class="weekday" style="font-size: 9px; text-align: center; color: #ccc;">PZ</div>
-            </div>
-            <div class="cal-grid" id="calendarGrid" style="margin-top:8px;"></div>
+            <div class="cal-grid" id="calendarGrid"></div>
         </div>
     </div>
 </div>
@@ -131,66 +130,75 @@
     let selectedDateStr = new Date().toLocaleDateString('en-CA');
 
     function toggleDiary(userId) {
-        const diaryArea = document.getElementById('diary-area');
         if (currentUserId === userId) {
             currentUserId = '';
-            diaryArea.style.display = 'none';
+            document.getElementById('diary-area').style.display = 'none';
             document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
+            document.documentElement.style.setProperty('--user-color', '#6c5ce7');
         } else {
             currentUserId = userId;
+            const color = (userId === 'taha') ? '#3498db' : '#e84393';
+            document.documentElement.style.setProperty('--user-color', color);
+            
             document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
             document.getElementById('card-' + userId).classList.add('active');
-            diaryArea.style.display = 'block';
+            document.getElementById('diary-area').style.display = 'block';
             selectDay(new Date().toLocaleDateString('en-CA'));
         }
     }
 
     function selectDay(dateStr) {
         selectedDateStr = dateStr;
-        const options = { day: 'numeric', month: 'long', year: 'numeric' };
-        document.getElementById('archiveDateTitle').innerText = new Date(dateStr).toLocaleDateString('tr-TR', options) + " Arşivi";
+        const options = { day: 'numeric', month: 'long' };
+        document.getElementById('archiveDateTitle').innerText = new Date(dateStr).toLocaleDateString('tr-TR', options) + " Akışı";
         renderCalendar();
         loadArchive(); 
     }
 
+    // Yeni: Notları akış şeklinde yükler
     function loadArchive() {
-        const contentDiv = document.getElementById('archiveContent');
-        const imgDiv = document.getElementById('archiveImageContainer');
+        const flow = document.getElementById('notesFlow');
         if (!currentUserId) return;
 
-        db.ref(`notes/${currentUserId}/${selectedDateStr}`).once('value', snap => {
+        db.ref(`notes/${currentUserId}/${selectedDateStr}`).on('value', snap => {
+            flow.innerHTML = "";
             const data = snap.val();
             if (data) {
-                contentDiv.innerHTML = data.text || "";
-                imgDiv.innerHTML = data.image ? `<img src="${data.image}" class="archive-image">` : "";
+                // Notları zamana göre sırala (Firebase ID'leri kronolojiktir)
+                Object.values(data).reverse().forEach(note => {
+                    const time = note.timestamp ? new Date(note.timestamp).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'}) : "";
+                    const html = `
+                        <div class="note-bubble">
+                            <span class="note-time">${time}</span>
+                            <div class="note-text">${note.text}</div>
+                            ${note.image ? `<img src="${note.image}" class="note-img">` : ""}
+                        </div>
+                    `;
+                    flow.innerHTML += html;
+                });
             } else {
-                contentDiv.innerHTML = `<div class="empty-msg">Bu tarihte senin bir kaydın yok.</div>`;
-                imgDiv.innerHTML = "";
+                flow.innerHTML = `<div style="text-align:center; color:#ccc; font-size:13px; padding:20px;">Henüz bir şey eklenmemiş.</div>`;
             }
         });
     }
 
+    // Yeni: Üstüne yazmaz, yeni kayıt ekler (push)
     function saveToFirebase() {
-        const inputField = document.getElementById('noteInput');
-        const text = inputField.value;
+        const input = document.getElementById('noteInput');
         const btn = document.getElementById('saveButton');
-        if(!text && !selectedImageBase64) return;
+        if(!input.value && !selectedImageBase64) return;
 
-        db.ref(`notes/${currentUserId}/${selectedDateStr}`).set({
-            text: text,
+        const newNoteRef = db.ref(`notes/${currentUserId}/${selectedDateStr}`).push();
+        newNoteRef.set({
+            text: input.value,
             image: selectedImageBase64,
-            timestamp: Date.now()
+            timestamp: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            inputField.value = "";
+            input.value = "";
             selectedImageBase64 = "";
             document.getElementById('previewContainer').innerHTML = "";
-            btn.classList.add('success');
-            btn.innerText = "✓ Arşivlendi";
-            loadArchive();
-            setTimeout(() => {
-                btn.classList.remove('success');
-                btn.innerText = "Günü Arşivle";
-            }, 2000);
+            btn.innerText = "✓ Eklendi";
+            setTimeout(() => btn.innerText = "Günü Arşivle", 1500);
         });
     }
 
@@ -217,7 +225,7 @@
             const reader = new FileReader();
             reader.onloadend = () => {
                 selectedImageBase64 = reader.result;
-                document.getElementById('previewContainer').innerHTML = `<img src="${selectedImageBase64}" style="width:100%; border-radius:15px; margin-top:10px;">`;
+                document.getElementById('previewContainer').innerHTML = `<img src="${selectedImageBase64}">`;
             };
             reader.readAsDataURL(file);
         }
@@ -246,11 +254,8 @@
         document.getElementById('dailyQuote').innerText = q.s;
         document.getElementById('quoteAuthor').innerText = "— " + q.a;
     }
-    function syncNames() { db.ref('settings/names').on('value', snap => { const names = snap.val() || { sude: "Sude", taha: "Taha" }; document.getElementById('name-sude').innerText = names.sude; document.getElementById('name-taha').innerText = names.taha; }); }
-    function renameUser(id, event) { event.stopPropagation(); const newName = prompt("Yeni isim:"); if (newName) db.ref('settings/names').update({ [id]: newName }); }
 
     setRandomQuote();
-    syncNames();
     setInterval(updateTimers, 60000);
     updateTimers();
 </script>
