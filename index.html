@@ -30,7 +30,6 @@
         .profile-card.active { opacity: 1; background: #fff; border-color: var(--tyt); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2); }
         .edit-name-btn { position: absolute; top: 5px; right: 8px; font-size: 12px; color: #ccc; }
 
-        /* Yazma Alanı (Her zaman temiz) */
         textarea { width: 100%; height: 100px; padding: 15px; border-radius: 20px; border: 2px solid #f1f1f1; box-sizing: border-box; font-family: inherit; resize: none; outline: none; font-size: 15px; transition: 0.3s; }
         textarea:focus { border-color: var(--tyt); }
 
@@ -39,21 +38,18 @@
         .save-btn { background: var(--dark); color: white; border: none; padding: 18px; border-radius: 22px; width: 100%; font-weight: 800; cursor: pointer; margin: 15px 0; font-size: 15px; transition: 0.4s; }
         .save-btn.success { background: var(--green) !important; }
 
-        /* ARŞİV GÖRÜNTÜLEME ALANI */
         .archive-display { background: #f9f9f9; border-radius: 25px; padding: 15px; margin-bottom: 20px; border: 1px solid #eee; min-height: 50px; }
         .archive-title { font-size: 11px; font-weight: 800; color: #95a5a6; text-transform: uppercase; margin-bottom: 10px; display: block; }
         .archive-content { font-size: 15px; line-height: 1.5; color: #2c3e50; white-space: pre-wrap; }
         .archive-image { width: 100%; border-radius: 15px; margin-top: 10px; display: block; }
         .empty-msg { font-style: italic; color: #ccc; font-size: 13px; text-align: center; padding: 10px; }
 
-        /* Takvim */
         .calendar-box { background: #fff; border-radius: 25px; padding: 15px; border: 1px solid #f1f1f1; }
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: 800; }
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .cal-day { font-size: 12px; padding: 8px 0; border-radius: 10px; cursor: pointer; text-align: center; }
+        .cal-day { font-size: 12px; padding: 8px 0; border-radius: 10px; cursor: pointer; text-align: center; position: relative; }
         .cal-day.selected { background: var(--tyt) !important; color: white !important; font-weight: bold; }
-        .cal-day.has-data::after { content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--tyt); border-radius: 50%; }
-
+        
         #previewContainer img { width: 100%; border-radius: 20px; margin-top: 10px; border: 2px solid var(--tyt); }
         .nav-btn { background: #f1f2f6; border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; }
     </style>
@@ -134,22 +130,18 @@
     let viewDate = new Date();
     let selectedDateStr = new Date().toLocaleDateString('en-CA');
 
-    // Seçim Fonksiyonu: Bir daha basınca kapanma özelliği eklendi
     function toggleDiary(userId) {
         const diaryArea = document.getElementById('diary-area');
-        
         if (currentUserId === userId) {
-            // Zaten seçili olana basıldı, kapat
             currentUserId = '';
             diaryArea.style.display = 'none';
             document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
         } else {
-            // Yeni bir kullanıcı seçildi
             currentUserId = userId;
             document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
             document.getElementById('card-' + userId).classList.add('active');
             diaryArea.style.display = 'block';
-            selectDay(new Date().toLocaleDateString('en-CA')); // Bugünün verisini getir
+            selectDay(new Date().toLocaleDateString('en-CA'));
         }
     }
 
@@ -161,18 +153,18 @@
         loadArchive(); 
     }
 
-    // Arşivi Görüntüleme Alanına Çekme
     function loadArchive() {
         const contentDiv = document.getElementById('archiveContent');
         const imgDiv = document.getElementById('archiveImageContainer');
-        
+        if (!currentUserId) return;
+
         db.ref(`notes/${currentUserId}/${selectedDateStr}`).once('value', snap => {
             const data = snap.val();
             if (data) {
                 contentDiv.innerHTML = data.text || "";
                 imgDiv.innerHTML = data.image ? `<img src="${data.image}" class="archive-image">` : "";
             } else {
-                contentDiv.innerHTML = `<div class="empty-msg">Bu tarihte henüz bir kayıt yok.</div>`;
+                contentDiv.innerHTML = `<div class="empty-msg">Bu tarihte senin bir kaydın yok.</div>`;
                 imgDiv.innerHTML = "";
             }
         });
@@ -182,7 +174,6 @@
         const inputField = document.getElementById('noteInput');
         const text = inputField.value;
         const btn = document.getElementById('saveButton');
-        
         if(!text && !selectedImageBase64) return;
 
         db.ref(`notes/${currentUserId}/${selectedDateStr}`).set({
@@ -190,16 +181,12 @@
             image: selectedImageBase64,
             timestamp: Date.now()
         }).then(() => {
-            // Inputları temizle
             inputField.value = "";
             selectedImageBase64 = "";
             document.getElementById('previewContainer').innerHTML = "";
-            
-            // Animasyon ve Arşivi Yenile
             btn.classList.add('success');
             btn.innerText = "✓ Arşivlendi";
-            loadArchive(); // Yeni kaydı aşağıda hemen göster
-            
+            loadArchive();
             setTimeout(() => {
                 btn.classList.remove('success');
                 btn.innerText = "Günü Arşivle";
