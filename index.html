@@ -2,8 +2,8 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YKS & Süreç Takip</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>YKS & Süreç Takip 2026</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -13,20 +13,21 @@
         body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; color: var(--dark); transition: 0.3s; }
         .container { background: white; width: 100%; max-width: 420px; border-radius: 35px; padding: 20px; box-shadow: 0 15px 50px rgba(0,0,0,0.1); }
         
-        /* Dinamik Quote Kartı */
         .quote-card { background: var(--user-color); color: white; padding: 20px; border-radius: 25px; margin-bottom: 20px; transition: 0.5s; }
         #dailyQuote { font-size: 14px; font-weight: 600; font-style: italic; line-height: 1.5; margin: 0; }
         .quote-author { font-size: 11px; opacity: 0.8; margin-top: 8px; display: block; font-weight: 700; text-transform: uppercase; }
 
         .exam-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .stat-card { background: #fff; padding: 12px; border-radius: 20px; text-align: center; border: 1px solid #f1f1f1; }
-        .stat-val { font-size: 15px; font-weight: 800; display: block; }
+        .stat-val { font-size: 14px; font-weight: 800; display: block; }
         .stat-label { font-size: 9px; color: #95a5a6; font-weight: 700; text-transform: uppercase; }
 
         .process-card { background: #fff; padding: 15px; border-radius: 20px; text-align: center; border: 1px solid #fceaea; margin-bottom: 20px; }
         .process-val { font-size: 16px; font-weight: 800; color: var(--red); display: block; }
         
-        /* Kullanıcı Seçimi */
+        /* Son Görülme Stili */
+        #otherUserLastSeen { font-size: 10px; color: #95a5a6; margin-top: 8px; font-weight: bold; border-top: 1px solid #f9f9f9; pt: 5px; }
+
         .user-selector { display: flex; gap: 12px; margin-bottom: 20px; }
         .profile-card { flex: 1; text-align: center; cursor: pointer; opacity: 0.4; transition: 0.3s; padding: 15px; border-radius: 22px; background: #f8f9fa; position: relative; border: 2px solid transparent; }
         .profile-card.active { opacity: 1; background: #fff; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
@@ -38,25 +39,24 @@
 
         .save-btn { background: var(--user-color); color: white; border: none; padding: 18px; border-radius: 22px; width: 100%; font-weight: 800; cursor: pointer; margin: 15px 0; font-size: 15px; transition: 0.4s; }
         
-        /* Arşiv Akışı (Alt Alta Mesajlar) */
         .archive-display { margin-bottom: 20px; }
         .archive-title { font-size: 12px; font-weight: 800; color: #95a5a6; text-transform: uppercase; margin-bottom: 10px; display: block; text-align: center; }
         .note-bubble { background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 20px; margin-bottom: 10px; position: relative; animation: slideIn 0.3s ease-out; }
         .note-time { font-size: 10px; color: #ccc; position: absolute; top: 10px; right: 15px; }
         .note-text { font-size: 14px; color: #2c3e50; line-height: 1.4; white-space: pre-wrap; margin-top: 5px; }
-        .note-img { width: 100%; border-radius: 12px; margin-top: 10px; }
+        .note-img { width: 100%; border-radius: 12px; margin-top: 10px; max-height: 300px; object-fit: cover; }
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Takvim */
         .calendar-box { background: #fff; border-radius: 25px; padding: 15px; border: 1px solid #f1f1f1; }
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: 800; }
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .cal-day { font-size: 12px; padding: 8px 0; border-radius: 10px; cursor: pointer; text-align: center; }
+        .cal-day { font-size: 12px; padding: 8px 0; border-radius: 10px; cursor: pointer; text-align: center; transition: 0.2s; }
         .cal-day.selected { background: var(--user-color) !important; color: white !important; font-weight: bold; }
         
-        #previewContainer img { width: 100%; border-radius: 20px; margin-top: 10px; border: 2px solid var(--user-color); }
-        .nav-btn { background: #f1f2f6; border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; }
+        #previewContainer { position: relative; margin-top: 10px; }
+        #previewContainer img { width: 100%; border-radius: 20px; border: 2px solid var(--user-color); max-height: 200px; object-fit: cover; }
+        .nav-btn { background: #f1f2f6; border: none; width: 32px; height: 32px; border-radius: 10px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -75,6 +75,7 @@
     <div class="process-card">
         <span class="process-val" id="awayLive">...</span>
         <span class="stat-label">Süreç Takibi</span>
+        <div id="otherUserLastSeen"></div>
     </div>
 
     <div class="user-selector">
@@ -87,7 +88,7 @@
     </div>
 
     <div id="diary-area" style="display:none;">
-        <textarea id="noteInput" placeholder="Neler başardın?"></textarea>
+        <textarea id="noteInput" placeholder="Bugün neler başardın?"></textarea>
         <label class="custom-file-upload">
             <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="previewImage()">
             📸 Fotoğraf Ekle
@@ -135,6 +136,7 @@
             document.getElementById('diary-area').style.display = 'none';
             document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
             document.documentElement.style.setProperty('--user-color', '#6c5ce7');
+            document.getElementById('otherUserLastSeen').innerText = "";
         } else {
             currentUserId = userId;
             const color = (userId === 'taha') ? '#3498db' : '#e84393';
@@ -143,8 +145,36 @@
             document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
             document.getElementById('card-' + userId).classList.add('active');
             document.getElementById('diary-area').style.display = 'block';
+            
+            // Son Görülme Özelliği Burada Çalışıyor
+            handleLastSeen(userId);
             selectDay(new Date().toLocaleDateString('en-CA'));
         }
+    }
+
+    function handleLastSeen(myId) {
+        const otherId = (myId === 'taha') ? 'sude' : 'taha';
+        const otherName = (myId === 'taha') ? 'Sude' : 'Taha';
+
+        // Kendi son görülmeni güncelle
+        db.ref(`status/${myId}`).set({
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        // Diğerininkini ekrana yazdır (Canlı takip)
+        db.ref(`status/${otherId}`).on('value', (snap) => {
+            const data = snap.val();
+            const display = document.getElementById('otherUserLastSeen');
+            if (data && data.lastSeen) {
+                const date = new Date(data.lastSeen);
+                const timeStr = date.toLocaleString('tr-TR', { 
+                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
+                });
+                display.innerText = `${otherName} son giriş: ${timeStr}`;
+            } else {
+                display.innerText = `${otherName} henüz girmedi.`;
+            }
+        });
     }
 
     function selectDay(dateStr) {
@@ -155,7 +185,6 @@
         loadArchive(); 
     }
 
-    // Yeni: Notları akış şeklinde yükler
     function loadArchive() {
         const flow = document.getElementById('notesFlow');
         if (!currentUserId) return;
@@ -164,7 +193,6 @@
             flow.innerHTML = "";
             const data = snap.val();
             if (data) {
-                // Notları zamana göre sırala (Firebase ID'leri kronolojiktir)
                 Object.values(data).reverse().forEach(note => {
                     const time = note.timestamp ? new Date(note.timestamp).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'}) : "";
                     const html = `
@@ -177,17 +205,17 @@
                     flow.innerHTML += html;
                 });
             } else {
-                flow.innerHTML = `<div style="text-align:center; color:#ccc; font-size:13px; padding:20px;">Henüz bir şey eklenmemiş.</div>`;
+                flow.innerHTML = `<div style="text-align:center; color:#ccc; font-size:13px; padding:20px;">Bir şey eklenmemiş.</div>`;
             }
         });
     }
 
-    // Yeni: Üstüne yazmaz, yeni kayıt ekler (push)
     function saveToFirebase() {
         const input = document.getElementById('noteInput');
         const btn = document.getElementById('saveButton');
         if(!input.value && !selectedImageBase64) return;
 
+        btn.disabled = true;
         const newNoteRef = db.ref(`notes/${currentUserId}/${selectedDateStr}`).push();
         newNoteRef.set({
             text: input.value,
@@ -197,6 +225,7 @@
             input.value = "";
             selectedImageBase64 = "";
             document.getElementById('previewContainer').innerHTML = "";
+            btn.disabled = false;
             btn.innerText = "✓ Eklendi";
             setTimeout(() => btn.innerText = "Günü Arşivle", 1500);
         });
@@ -210,8 +239,8 @@
         document.getElementById("monthYear").innerText = new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(viewDate);
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const offset = firstDay === 0 ? 6 : firstDay - 1;
-        for(let i=0; i<offset; i++) grid.innerHTML += `<div></div>`;
+        const shift = firstDay === 0 ? 6 : firstDay - 1;
+        for(let i=0; i<shift; i++) grid.innerHTML += `<div></div>`;
         for(let d=1; d<=daysInMonth; d++) {
             const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const isSelected = dateStr === selectedDateStr ? 'selected' : '';
@@ -225,10 +254,16 @@
             const reader = new FileReader();
             reader.onloadend = () => {
                 selectedImageBase64 = reader.result;
-                document.getElementById('previewContainer').innerHTML = `<img src="${selectedImageBase64}">`;
+                document.getElementById('previewContainer').innerHTML = `<img src="${selectedImageBase64}"><div style="text-align:center;font-size:10px;color:red;cursor:pointer" onclick="clearImage()">İptal</div>`;
             };
             reader.readAsDataURL(file);
         }
+    }
+
+    function clearImage() {
+        selectedImageBase64 = "";
+        document.getElementById('previewContainer').innerHTML = "";
+        document.getElementById('fileInput').value = "";
     }
 
     function changeMonth(val) { viewDate.setMonth(viewDate.getMonth() + val); renderCalendar(); }
@@ -240,6 +275,7 @@
         const start = new Date("2026-02-08T22:35:00");
         const calc = (target) => {
             const diff = target - now;
+            if (diff <= 0) return "Sınav Başladı!";
             return `${Math.floor(diff/86400000)}g ${Math.floor((diff%86400000)/3600000)}s ${Math.floor((diff%3600000)/60000)}dk`;
         }
         document.getElementById("tytCount").innerText = calc(tyt);
@@ -256,8 +292,8 @@
     }
 
     setRandomQuote();
-    setInterval(updateTimers, 60000);
     updateTimers();
+    setInterval(updateTimers, 60000);
 </script>
 </body>
 </html>
