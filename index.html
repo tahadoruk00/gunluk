@@ -13,14 +13,18 @@
         body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; color: var(--dark); transition: 0.3s; }
         .container { background: white; width: 100%; max-width: 420px; border-radius: 35px; padding: 20px; box-shadow: 0 15px 50px rgba(0,0,0,0.1); }
         
+        /* GİRİŞ EKRANI STİLİ */
+        #lockScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .lock-card { background: white; padding: 40px 30px; border-radius: 35px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 85%; max-width: 320px; }
+        .lock-input { width: 100%; padding: 15px; border-radius: 18px; border: 2px solid #f1f1f1; text-align: center; font-size: 18px; margin-bottom: 20px; outline: none; box-sizing: border-box; transition: 0.3s; }
+        .lock-input:focus { border-color: var(--dark); }
+
         .quote-card { background: var(--user-color); color: white; padding: 20px; border-radius: 25px; margin-bottom: 20px; transition: 0.5s; position: relative; }
         #dailyQuote { font-size: 14px; font-weight: 600; font-style: italic; line-height: 1.5; margin: 0; padding-right: 15px;}
         .quote-author { font-size: 11px; opacity: 0.8; margin-top: 8px; display: block; font-weight: 700; text-transform: uppercase; }
 
-        /* GİZLİ BUTON STİLİ */
         .secret-btn { position: absolute; bottom: 10px; right: 10px; width: 15px; height: 15px; background: transparent; border: none; cursor: pointer; border-radius: 50%; z-index: 10; }
-        .secret-btn:hover { background: rgba(255,255,255,0.2); }
-
+        
         .exam-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .stat-card { background: #fff; padding: 12px; border-radius: 20px; text-align: center; border: 1px solid #f1f1f1; }
         .stat-val { font-size: 14px; font-weight: 800; display: block; }
@@ -28,7 +32,6 @@
 
         .process-card { background: #fff; padding: 15px; border-radius: 20px; text-align: center; border: 1px solid #fceaea; margin-bottom: 20px; }
         .process-val { font-size: 16px; font-weight: 800; color: var(--red); display: block; }
-        
         #otherUserLastSeen { font-size: 10px; color: #95a5a6; margin-top: 8px; font-weight: bold; border-top: 1px solid #f9f9f9; padding-top: 5px; }
 
         .user-selector { display: flex; gap: 12px; margin-bottom: 20px; }
@@ -63,6 +66,14 @@
     </style>
 </head>
 <body>
+
+<div id="lockScreen">
+    <div class="lock-card">
+        <h2 style="margin-top:0; color:var(--dark); font-weight: 800; letter-spacing: -1px;">Giriş</h2>
+        <input type="password" id="passInput" class="lock-input" placeholder="Şifreyi girin">
+        <button onclick="unlockApp()" class="save-btn" style="margin:0; background:var(--dark)">Devam Et</button>
+    </div>
+</div>
 
 <div class="container">
     <div class="quote-card" id="mainQuoteCard">
@@ -133,10 +144,32 @@
     let selectedImageBase64 = "";
     let viewDate = new Date();
     let selectedDateStr = new Date().toLocaleDateString('en-CA');
-    
-    // Stabilite için referans takibi
     let currentNoteRef = null;
     let otherStatusRef = null;
+
+    function unlockApp() {
+        const pass = document.getElementById('passInput').value;
+        const sTaha = "240708"; 
+        const sSude = "050209"; 
+
+        if(pass === sTaha || pass === sSude) {
+            document.getElementById('lockScreen').style.display = 'none';
+            const userTag = (pass === sTaha) ? "TAHA Şifresi" : "SUDE Şifresi";
+            
+            db.ref(`logs/gate_entries`).push({
+                tag: userTag,
+                time: new Date().toLocaleString('tr-TR'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        } else {
+            db.ref(`logs/failed_attempts`).push({
+                attemptedPass: pass,
+                time: new Date().toLocaleString('tr-TR'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            alert("Şifre Yanlış!");
+        }
+    }
 
     function toggleDiary(userId) {
         if (currentUserId === userId) {
@@ -151,11 +184,9 @@
             currentUserId = userId;
             const color = (userId === 'taha') ? '#3498db' : '#e84393';
             document.documentElement.style.setProperty('--user-color', color);
-            
             document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
             document.getElementById('card-' + userId).classList.add('active');
             document.getElementById('diary-area').style.display = 'block';
-            
             handlePresence(userId);
             selectDay(new Date().toLocaleDateString('en-CA'));
         }
@@ -166,46 +197,51 @@
         if (otherStatusRef) otherStatusRef.off();
     }
 
-    // LOGLAMA SİSTEMİ
     function saveLoginLog(userName) {
-        const now = new Date();
         db.ref(`logs/${userName}`).push({
-            time: now.toLocaleString('tr-TR'),
+            time: new Date().toLocaleString('tr-TR'),
             timestamp: firebase.database.ServerValue.TIMESTAMP
         });
     }
 
-    // AÇILIR PENCERE FONKSİYONU
     function checkAllLogs() {
         db.ref(`logs`).once('value', snapshot => {
             let logs = snapshot.val();
-            let msg = "--- SON GİRİŞLER ---\n\n";
-            
+            let msg = "--- SİSTEM KAYITLARI ---\n\n";
             if(logs) {
-                for(let user in logs) {
-                    msg += `[${user.toUpperCase()}]\n`;
-                    let userLogs = Object.values(logs[user]).slice(-3); // Son 3 kayıt
-                    userLogs.reverse().forEach(l => msg += `- ${l.time}\n`);
+                if(logs.failed_attempts) {
+                    msg += "⚠️ HATALI DENEMELER:\n";
+                    let fails = Object.values(logs.failed_attempts).slice(-5).reverse();
+                    fails.forEach(f => msg += `- Denenen: ${f.attemptedPass} (${f.time})\n`);
                     msg += "\n";
                 }
-            } else {
-                msg = "Henüz kayıt yok.";
-            }
+                if(logs.gate_entries) {
+                    msg += "🔑 KAPI GİRİŞLERİ:\n";
+                    let entries = Object.values(logs.gate_entries).slice(-3).reverse();
+                    entries.forEach(e => msg += `- ${e.tag}: ${e.time}\n`);
+                    msg += "\n";
+                }
+                const users = ['taha', 'sude'];
+                users.forEach(u => {
+                    if(logs[u]) {
+                        msg += `👤 ${u.toUpperCase()} PROFİLİ:\n`;
+                        let userLogs = Object.values(logs[u]).slice(-2).reverse();
+                        userLogs.forEach(l => msg += `- ${l.time}\n`);
+                        msg += "\n";
+                    }
+                });
+            } else { msg = "Henüz kayıt yok."; }
             alert(msg);
         });
     }
 
     function handlePresence(myId) {
-        saveLoginLog(myId); // Log kaydı ekle
+        saveLoginLog(myId);
         const otherId = (myId === 'taha') ? 'sude' : 'taha';
         const otherName = (myId === 'taha') ? 'Sude' : 'Taha';
-
-        // Durum güncelleme
         const myStatusRef = db.ref(`status/${myId}`);
         myStatusRef.set({ lastSeen: firebase.database.ServerValue.TIMESTAMP });
         myStatusRef.onDisconnect().set({ lastSeen: firebase.database.ServerValue.TIMESTAMP });
-
-        // Diğer kullanıcıyı dinle
         otherStatusRef = db.ref(`status/${otherId}`);
         otherStatusRef.on('value', (snap) => {
             const data = snap.val();
@@ -213,28 +249,21 @@
             if (data && data.lastSeen) {
                 const date = new Date(data.lastSeen);
                 display.innerText = `${otherName} son giriş: ${date.toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
-            } else {
-                display.innerText = `${otherName} henüz girmedi.`;
-            }
+            } else { display.innerText = `${otherName} henüz girmedi.`; }
         });
     }
 
     function selectDay(dateStr) {
         selectedDateStr = dateStr;
-        const options = { day: 'numeric', month: 'long' };
-        document.getElementById('archiveDateTitle').innerText = new Date(dateStr).toLocaleDateString('tr-TR', options) + " Akışı";
+        document.getElementById('archiveDateTitle').innerText = new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) + " Akışı";
         renderCalendar();
         loadArchive(); 
     }
 
     function loadArchive() {
         const flow = document.getElementById('notesFlow');
-        if (!currentUserId) return;
-
         if (currentNoteRef) currentNoteRef.off();
-        
         flow.innerHTML = `<div style="text-align:center; padding:20px; opacity:0.5;">Yükleniyor...</div>`;
-        
         currentNoteRef = db.ref(`notes/${currentUserId}/${selectedDateStr}`);
         currentNoteRef.on('value', snap => {
             flow.innerHTML = "";
@@ -249,9 +278,7 @@
                             ${note.image ? `<img src="${note.image}" class="note-img">` : ""}
                         </div>`;
                 });
-            } else {
-                flow.innerHTML = `<div style="text-align:center; color:#ccc; font-size:13px; padding:20px;">Henüz bir şey eklenmemiş.</div>`;
-            }
+            } else { flow.innerHTML = `<div style="text-align:center; color:#ccc; font-size:13px; padding:20px;">Henüz bir şey eklenmemiş.</div>`; }
         });
     }
 
@@ -259,18 +286,15 @@
         const input = document.getElementById('noteInput');
         const btn = document.getElementById('saveButton');
         if(!input.value && !selectedImageBase64) return;
-
         btn.disabled = true;
         db.ref(`notes/${currentUserId}/${selectedDateStr}`).push({
             text: input.value,
             image: selectedImageBase64,
             timestamp: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            input.value = "";
-            selectedImageBase64 = "";
+            input.value = ""; selectedImageBase64 = "";
             document.getElementById('previewContainer').innerHTML = "";
-            btn.disabled = false;
-            btn.innerText = "✓ Eklendi";
+            btn.disabled = false; btn.innerText = "✓ Eklendi";
             setTimeout(() => btn.innerText = "Günü Arşivle", 1500);
         });
     }
@@ -281,11 +305,9 @@
         const month = viewDate.getMonth();
         const year = viewDate.getFullYear();
         document.getElementById("monthYear").innerText = new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(viewDate);
-        
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const shift = firstDay === 0 ? 6 : firstDay - 1;
-
         for(let i=0; i<shift; i++) grid.innerHTML += `<div></div>`;
         for(let d=1; d<=daysInMonth; d++) {
             const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -294,11 +316,7 @@
         }
     }
 
-    function changeMonth(val) {
-        viewDate.setDate(1);
-        viewDate.setMonth(viewDate.getMonth() + val);
-        renderCalendar();
-    }
+    function changeMonth(val) { viewDate.setDate(1); viewDate.setMonth(viewDate.getMonth() + val); renderCalendar(); }
 
     function previewImage() {
         const file = document.getElementById('fileInput').files[0];
@@ -312,27 +330,20 @@
         }
     }
 
-    function clearImage() {
-        selectedImageBase64 = "";
-        document.getElementById('previewContainer').innerHTML = "";
-        document.getElementById('fileInput').value = "";
-    }
+    function clearImage() { selectedImageBase64 = ""; document.getElementById('previewContainer').innerHTML = ""; document.getElementById('fileInput').value = ""; }
 
     function updateTimers() {
         const now = new Date();
-        const tyt = new Date("June 20, 2026 10:15:00");
-        const ayt = new Date("June 21, 2026 10:15:00");
+        const tyt = new Date("2026-06-20T10:15:00");
+        const ayt = new Date("2026-06-21T10:15:00");
         const start = new Date("2026-02-08T22:35:00");
-
         const calc = (target) => {
             const diff = target - now;
             if (diff <= 0) return "Sınav Başladı!";
             return `${Math.floor(diff/86400000)}g ${Math.floor((diff%86400000)/3600000)}s ${Math.floor((diff%3600000)/60000)}dk`;
         }
-        
         document.getElementById("tytCount").innerText = calc(tyt);
         document.getElementById("aytCount").innerText = calc(ayt);
-        
         const diffS = now - start;
         document.getElementById("awayLive").innerText = `${Math.floor(diffS/86400000)}g ${Math.floor((diffS%86400000)/3600000)}s ${Math.floor((diffS%3600000)/60000)}dk`;
     }
