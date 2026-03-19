@@ -13,7 +13,6 @@
         body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; color: var(--dark); transition: 0.3s; }
         .container { background: white; width: 100%; max-width: 420px; border-radius: 35px; padding: 20px; box-shadow: 0 15px 50px rgba(0,0,0,0.1); }
         
-        /* GİRİŞ EKRANI STİLİ */
         #lockScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .lock-card { background: white; padding: 40px 30px; border-radius: 35px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 85%; max-width: 320px; }
         .lock-input { width: 100%; padding: 15px; border-radius: 18px; border: 2px solid #f1f1f1; text-align: center; font-size: 18px; margin-bottom: 20px; outline: none; box-sizing: border-box; transition: 0.3s; }
@@ -39,6 +38,12 @@
         .profile-card.active { opacity: 1; background: #fff; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         #card-taha.active { border-color: #3498db; }
         #card-sude.active { border-color: #e84393; }
+
+        /* MOOD SEÇİCİ STİLLERİ */
+        .mood-container { display: flex; justify-content: space-around; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 22px; border: 1px solid #f1f1f1; }
+        .mood-btn { font-size: 24px; cursor: pointer; transition: 0.3s; opacity: 0.3; filter: grayscale(1); border: none; background: none; padding: 5px; position: relative; display: flex; flex-direction: column; align-items: center; }
+        .mood-btn.selected { opacity: 1; filter: grayscale(0); transform: scale(1.2); }
+        .mood-btn span { font-size: 9px; font-weight: 800; color: #95a5a6; margin-top: 4px; text-transform: uppercase; }
 
         textarea { width: 100%; height: 90px; padding: 15px; border-radius: 20px; border: 2px solid #f1f1f1; box-sizing: border-box; font-family: inherit; resize: none; outline: none; font-size: 15px; }
         .custom-file-upload { display: flex; align-items: center; justify-content: center; gap: 8px; background: #f8f9fa; padding: 12px; border-radius: 15px; cursor: pointer; font-weight: 700; font-size: 13px; margin-top: 10px; border: 2px dashed #eee; }
@@ -103,7 +108,16 @@
     </div>
 
     <div id="diary-area" style="display:none;">
+        <div class="mood-container" id="moodPicker">
+            <button class="mood-btn" onclick="selectMood('😊', this)">😊<span>Mutlu</span></button>
+            <button class="mood-btn" onclick="selectMood('😔', this)">😔<span>Üzgün</span></button>
+            <button class="mood-btn" onclick="selectMood('😤', this)">😤<span>Sinirli</span></button>
+            <button class="mood-btn" onclick="selectMood('🤩', this)">🤩<span>Harika</span></button>
+            <button class="mood-btn" onclick="selectMood('😴', this)">😴<span>Yorgun</span></button>
+        </div>
+
         <textarea id="noteInput" placeholder="Bugün neler başardın?"></textarea>
+        
         <label class="custom-file-upload">
             <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="previewImage()">
             📸 Fotoğraf Ekle
@@ -142,11 +156,13 @@
 
     let currentUserId = '';
     let selectedImageBase64 = "";
+    let selectedMoodEmoji = ""; 
     let viewDate = new Date();
     let selectedDateStr = new Date().toLocaleDateString('en-CA');
     let currentNoteRef = null;
     let otherStatusRef = null;
 
+    // --- LOGLAMA VE ŞİFRE FONKSİYONLARI (KORUNAN KISIM) ---
     function unlockApp() {
         const pass = document.getElementById('passInput').value;
         const sTaha = "240708"; 
@@ -169,39 +185,6 @@
             });
             alert("Şifre Yanlış!");
         }
-    }
-
-    function toggleDiary(userId) {
-        if (currentUserId === userId) {
-            cleanupListeners();
-            currentUserId = '';
-            document.getElementById('diary-area').style.display = 'none';
-            document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
-            document.documentElement.style.setProperty('--user-color', '#6c5ce7');
-            document.getElementById('otherUserLastSeen').innerText = "";
-        } else {
-            cleanupListeners();
-            currentUserId = userId;
-            const color = (userId === 'taha') ? '#3498db' : '#e84393';
-            document.documentElement.style.setProperty('--user-color', color);
-            document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
-            document.getElementById('card-' + userId).classList.add('active');
-            document.getElementById('diary-area').style.display = 'block';
-            handlePresence(userId);
-            selectDay(new Date().toLocaleDateString('en-CA'));
-        }
-    }
-
-    function cleanupListeners() {
-        if (currentNoteRef) currentNoteRef.off();
-        if (otherStatusRef) otherStatusRef.off();
-    }
-
-    function saveLoginLog(userName) {
-        db.ref(`logs/${userName}`).push({
-            time: new Date().toLocaleString('tr-TR'),
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-        });
     }
 
     function checkAllLogs() {
@@ -233,6 +216,46 @@
             } else { msg = "Henüz kayıt yok."; }
             alert(msg);
         });
+    }
+
+    function saveLoginLog(userName) {
+        db.ref(`logs/${userName}`).push({
+            time: new Date().toLocaleString('tr-TR'),
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    }
+
+    // --- GÜNLÜK VE MOOD FONKSİYONLARI ---
+    function selectMood(emoji, btn) {
+        selectedMoodEmoji = emoji;
+        document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function toggleDiary(userId) {
+        if (currentUserId === userId) {
+            cleanupListeners();
+            currentUserId = '';
+            document.getElementById('diary-area').style.display = 'none';
+            document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
+            document.documentElement.style.setProperty('--user-color', '#6c5ce7');
+            document.getElementById('otherUserLastSeen').innerText = "";
+        } else {
+            cleanupListeners();
+            currentUserId = userId;
+            const color = (userId === 'taha') ? '#3498db' : '#e84393';
+            document.documentElement.style.setProperty('--user-color', color);
+            document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('active'));
+            document.getElementById('card-' + userId).classList.add('active');
+            document.getElementById('diary-area').style.display = 'block';
+            handlePresence(userId);
+            selectDay(new Date().toLocaleDateString('en-CA'));
+        }
+    }
+
+    function cleanupListeners() {
+        if (currentNoteRef) currentNoteRef.off();
+        if (otherStatusRef) otherStatusRef.off();
     }
 
     function handlePresence(myId) {
@@ -274,7 +297,7 @@
                     flow.innerHTML += `
                         <div class="note-bubble">
                             <span class="note-time">${time}</span>
-                            <div class="note-text">${note.text}</div>
+                            <div class="note-text">${note.mood ? '<span style="font-size:1.4em;margin-right:5px">' + note.mood + '</span>' : ''}${note.text}</div>
                             ${note.image ? `<img src="${note.image}" class="note-img">` : ""}
                         </div>`;
                 });
@@ -285,15 +308,17 @@
     function saveToFirebase() {
         const input = document.getElementById('noteInput');
         const btn = document.getElementById('saveButton');
-        if(!input.value && !selectedImageBase64) return;
+        if(!input.value && !selectedImageBase64 && !selectedMoodEmoji) return;
         btn.disabled = true;
         db.ref(`notes/${currentUserId}/${selectedDateStr}`).push({
             text: input.value,
             image: selectedImageBase64,
+            mood: selectedMoodEmoji,
             timestamp: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
-            input.value = ""; selectedImageBase64 = "";
+            input.value = ""; selectedImageBase64 = ""; selectedMoodEmoji = "";
             document.getElementById('previewContainer').innerHTML = "";
+            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
             btn.disabled = false; btn.innerText = "✓ Eklendi";
             setTimeout(() => btn.innerText = "Günü Arşivle", 1500);
         });
