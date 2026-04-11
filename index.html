@@ -226,7 +226,14 @@
                     if(logs[u]) {
                         msg += `👤 ${u.toUpperCase()} PROFİLİ:\n`;
                         let userLogs = Object.values(logs[u]).slice(-2).reverse();
-                        userLogs.forEach(l => msg += `- ${l.time}\n`);
+                        userLogs.forEach(l => msg += `- Aktiflik: ${l.time}\n`);
+                        
+                        // YENİ ÖZELLİK: Son 3 Farklı İncelenen Gün
+                        if(logs.view_history && logs.view_history[u]) {
+                            let history = Object.values(logs.view_history[u]).reverse();
+                            let uniqueDates = [...new Set(history.map(h => h.viewedDate))].slice(0, 3);
+                            msg += `- Baktığı Günler: ${uniqueDates.join(", ")}\n`;
+                        }
                         msg += "\n";
                     }
                 });
@@ -255,7 +262,17 @@
 
     function selectDay(dateStr) {
         selectedDateStr = dateStr;
-        document.getElementById('archiveDateTitle').innerText = new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) + " Akışı";
+        const formattedDate = new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+        document.getElementById('archiveDateTitle').innerText = formattedDate + " Akışı";
+        
+        // Log Kaydı: Hangi tarihe tıklandığını veritabanına yaz
+        if (currentUserId) {
+            db.ref(`logs/view_history/${currentUserId}`).push({
+                viewedDate: formattedDate,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
         renderCalendar();
         loadArchive(); 
     }
