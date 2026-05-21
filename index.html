@@ -70,7 +70,7 @@
 <div id="lockScreen">
     <div class="lock-card">
         <h2 style="margin-top:0; color:var(--dark); font-weight: 800; letter-spacing: -1px;">Giriş</h2>
-        <input type="password" id="passInput" class="lock-input" placeholder="Şifreyi girin">
+        <input type="password" id="passInput" class="lock-input" placeholder="Şifreyi girin" inputmode="numeric" pattern="[0-9]*">
         <button onclick="unlockApp()" class="save-btn" style="margin:0; background:var(--dark)">Devam Et</button>
     </div>
 </div>
@@ -357,7 +357,7 @@
         const calc = (target) => {
             const diff = target - now;
             if (diff <= 0) return "Sınav Başladı!";
-            return `${Math.floor(diff/86400000)}g ${Math.floor((diff%86400000)/3600000)}s ${Math.floor((diff%3600000)/60000)}dk`;
+            return `${Math.floor(diff/86400000)}g ${Math.floor((diff%86400000)/3600000)}s ${Math.floor((diff%3600000)/6000)}dk`;
         }
         document.getElementById("tytCount").innerText = calc(tyt);
         document.getElementById("aytCount").innerText = calc(ayt);
