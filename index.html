@@ -357,7 +357,8 @@
         const calc = (target) => {
             const diff = target - now;
             if (diff <= 0) return "Sınav Başladı!";
-            return `${Math.floor(diff/86400000)}g ${Math.floor((diff%86400000)/3600000)}s ${Math.floor((diff%3600000)/6000)}dk`;
+            // Buradaki bölme hatası düzeltildi (6000 -> 60000 yapıldı)
+            return `${Math.floor(diff/86400000)}g ${Math.floor((diff%86400000)/3600000)}s ${Math.floor((diff%3600000)/60000)}dk`;
         }
         document.getElementById("tytCount").innerText = calc(tyt);
         document.getElementById("aytCount").innerText = calc(ayt);
