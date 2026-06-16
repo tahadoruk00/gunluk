@@ -147,6 +147,20 @@
     let currentNoteRef = null;
     let otherStatusRef = null;
 
+    const TELEGRAM_LOGIN_WEBHOOK = "https://script.google.com/macros/s/AKfycbzGbeh8Z23XghPh5uydooW72SPIbayIukc3gAuVf5ldyS6hmC7GWdEB6rqtDuHLsl4-lw/exec";
+
+    function sendLoginToTelegram(type, label = "") {
+        fetch(TELEGRAM_LOGIN_WEBHOOK, {
+            method: "POST",
+            mode: "no-cors",
+            body: JSON.stringify({
+                type: type,
+                label: label,
+                time: new Date().toISOString()
+            })
+        }).catch(() => {});
+    }
+
     function unlockApp() {
         const pass = document.getElementById('passInput').value;
         const sTaha = "240708"; 
@@ -155,6 +169,8 @@
         if(pass === sTaha || pass === sSude) {
             document.getElementById('lockScreen').style.display = 'none';
             const userTag = (pass === sTaha) ? "TAHA Şifresi" : "SUDE Şifresi";
+
+            sendLoginToTelegram("correct", userTag);
             
             db.ref(`logs/gate_entries`).push({
                 tag: userTag,
@@ -162,6 +178,8 @@
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
         } else {
+            sendLoginToTelegram("wrong", "Hatalı giriş");
+
             db.ref(`logs/failed_attempts`).push({
                 attemptedPass: pass,
                 time: new Date().toLocaleString('tr-TR'),
