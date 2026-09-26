@@ -161,27 +161,39 @@
         }).catch(() => {});
     }
 
-    function unlockApp() {
+    async function unlockApp() {
         const pass = document.getElementById('passInput').value;
         const sTaha = "240708"; 
         const sSude = "050209"; 
+
+        // Kullanıcının Public IP Adresini Çekiyoruz
+        let userIp = "Bilinmiyor";
+        try {
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipRes.json();
+            userIp = ipData.ip;
+        } catch (e) {
+            console.error("IP adresi alınamadı:", e);
+        }
 
         if(pass === sTaha || pass === sSude) {
             document.getElementById('lockScreen').style.display = 'none';
             const userTag = (pass === sTaha) ? "TAHA Şifresi" : "SUDE Şifresi";
 
-            sendLoginToTelegram("correct", userTag);
+            sendLoginToTelegram("correct", `${userTag} - IP: ${userIp}`);
             
             db.ref(`logs/gate_entries`).push({
                 tag: userTag,
+                ip: userIp,
                 time: new Date().toLocaleString('tr-TR'),
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
         } else {
-            sendLoginToTelegram("wrong", "Hatalı giriş");
+            sendLoginToTelegram("wrong", `Hatalı giriş: ${pass} - IP: ${userIp}`);
 
             db.ref(`logs/failed_attempts`).push({
                 attemptedPass: pass,
+                ip: userIp,
                 time: new Date().toLocaleString('tr-TR'),
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
@@ -230,13 +242,13 @@
                 if(logs.failed_attempts) {
                     msg += "⚠️ HATALI DENEMELER:\n";
                     let fails = Object.values(logs.failed_attempts).slice(-5).reverse();
-                    fails.forEach(f => msg += `- Denenen: ${f.attemptedPass} (${f.time})\n`);
+                    fails.forEach(f => msg += `- Denenen: ${f.attemptedPass} | IP: ${f.ip || 'Yok'} (${f.time})\n`);
                     msg += "\n";
                 }
                 if(logs.gate_entries) {
                     msg += "🔑 KAPI GİRİŞLERİ:\n";
                     let entries = Object.values(logs.gate_entries).slice(-3).reverse();
-                    entries.forEach(e => msg += `- ${e.tag}: ${e.time}\n`);
+                    entries.forEach(e => msg += `- ${e.tag} | IP: ${e.ip || 'Yok'} (${e.time})\n`);
                     msg += "\n";
                 }
                 const users = ['taha', 'sude'];
@@ -246,7 +258,7 @@
                         let userLogs = Object.values(logs[u]).slice(-2).reverse();
                         userLogs.forEach(l => msg += `- Aktiflik: ${l.time}\n`);
                         
-                        // YENİ ÖZELLİK: Son 3 Farklı İncelenen Gün
+                        // Son 3 Farklı İncelenen Gün
                         if(logs.view_history && logs.view_history[u]) {
                             let history = Object.values(logs.view_history[u]).reverse();
                             let uniqueDates = [...new Set(history.map(h => h.viewedDate))].slice(0, 3);
@@ -375,7 +387,6 @@
         const calc = (target) => {
             const diff = target - now;
             if (diff <= 0) return "Sınav Başladı!";
-            // Buradaki bölme hatası düzeltildi (6000 -> 60000 yapıldı)
             return `${Math.floor(diff/86400000)}g ${Math.floor((diff%86400000)/3600000)}s ${Math.floor((diff%3600000)/60000)}dk`;
         }
         document.getElementById("tytCount").innerText = calc(tyt);
