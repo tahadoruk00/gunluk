@@ -71,7 +71,7 @@
     <div class="lock-card">
         <h2 style="margin-top:0; color:var(--dark); font-weight: 800; letter-spacing: -1px;">Giriş</h2>
         <input type="password" id="passInput" class="lock-input" placeholder="Şifreyi girin" inputmode="numeric" pattern="[0-9]*">
-        <button onclick="unlockApp()" class="save-btn" style="margin:0; background:var(--dark)">Devam Et</button>
+        <button id="loginBtn" onclick="unlockApp()" class="save-btn" style="margin:0; background:var(--dark)">Devam Et</button>
     </div>
 </div>
 
@@ -152,7 +152,7 @@
     function sendLoginToTelegram(type, label = "") {
         fetch(TELEGRAM_LOGIN_WEBHOOK, {
             method: "POST",
-            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({
                 type: type,
                 label: label,
@@ -163,8 +163,11 @@
 
     async function unlockApp() {
         const pass = document.getElementById('passInput').value;
-        const sTaha = "240708"; 
-        const sSude = "050209"; 
+        const loginBtn = document.getElementById('loginBtn');
+        if(!pass) return;
+
+        loginBtn.innerText = "Kontrol Ediliyor...";
+        loginBtn.disabled = true;
 
         // Kullanıcının Public IP Adresini Çekiyoruz
         let userIp = "Bilinmiyor";
@@ -176,29 +179,46 @@
             console.error("IP adresi alınamadı:", e);
         }
 
-        if(pass === sTaha || pass === sSude) {
-            document.getElementById('lockScreen').style.display = 'none';
-            const userTag = (pass === sTaha) ? "TAHA Şifresi" : "SUDE Şifresi";
+        // Şifreleri doğrudan Firebase veritabanından çekip doğruluyoruz
+        db.ref('passwords').once('value').then(snapshot => {
+            const validPasswords = snapshot.val() || {};
+            let matchedUser = null;
 
-            sendLoginToTelegram("correct", `${userTag} - IP: ${userIp}`);
-            
-            db.ref(`logs/gate_entries`).push({
-                tag: userTag,
-                ip: userIp,
-                time: new Date().toLocaleString('tr-TR'),
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-        } else {
-            sendLoginToTelegram("wrong", `Hatalı giriş: ${pass} - IP: ${userIp}`);
+            if (pass === validPasswords.taha) {
+                matchedUser = "TAHA Şifresi";
+            } else if (pass === validPasswords.sude) {
+                matchedUser = "SUDE Şifresi";
+            }
 
-            db.ref(`logs/failed_attempts`).push({
-                attemptedPass: pass,
-                ip: userIp,
-                time: new Date().toLocaleString('tr-TR'),
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
-            alert("Şifre Yanlış!");
-        }
+            if (matchedUser) {
+                document.getElementById('lockScreen').style.display = 'none';
+
+                sendLoginToTelegram("correct", `${matchedUser} - IP: ${userIp}`);
+                
+                db.ref(`logs/gate_entries`).push({
+                    tag: matchedUser,
+                    ip: userIp,
+                    time: new Date().toLocaleString('tr-TR'),
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            } else {
+                sendLoginToTelegram("wrong", `Hatalı giriş: ${pass} - IP: ${userIp}`);
+
+                db.ref(`logs/failed_attempts`).push({
+                    attemptedPass: pass,
+                    ip: userIp,
+                    time: new Date().toLocaleString('tr-TR'),
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                alert("Şifre Yanlış!");
+            }
+            loginBtn.innerText = "Devam Et";
+            loginBtn.disabled = false;
+        }).catch(err => {
+            alert("Bağlantı hatası oluştu!");
+            loginBtn.innerText = "Devam Et";
+            loginBtn.disabled = false;
+        });
     }
 
     function toggleDiary(userId) {
@@ -258,7 +278,6 @@
                         let userLogs = Object.values(logs[u]).slice(-2).reverse();
                         userLogs.forEach(l => msg += `- Aktiflik: ${l.time}\n`);
                         
-                        // Son 3 Farklı İncelenen Gün
                         if(logs.view_history && logs.view_history[u]) {
                             let history = Object.values(logs.view_history[u]).reverse();
                             let uniqueDates = [...new Set(history.map(h => h.viewedDate))].slice(0, 3);
@@ -295,7 +314,6 @@
         const formattedDate = new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
         document.getElementById('archiveDateTitle').innerText = formattedDate + " Akışı";
         
-        // Log Kaydı: Hangi tarihe tıklandığını veritabanına yaz
         if (currentUserId) {
             db.ref(`logs/view_history/${currentUserId}`).push({
                 viewedDate: formattedDate,
