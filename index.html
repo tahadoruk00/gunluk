@@ -169,7 +169,6 @@
         loginBtn.innerText = "Kontrol Ediliyor...";
         loginBtn.disabled = true;
 
-        // Kullanıcının Public IP Adresini Çekiyoruz
         let userIp = "Bilinmiyor";
         try {
             const ipRes = await fetch('https://api.ipify.org?format=json');
@@ -179,14 +178,17 @@
             console.error("IP adresi alınamadı:", e);
         }
 
-        // Şifreleri doğrudan Firebase veritabanından çekip doğruluyoruz
         db.ref('passwords').once('value').then(snapshot => {
             const validPasswords = snapshot.val() || {};
             let matchedUser = null;
 
-            if (pass === validPasswords.taha) {
+            const inputPass = String(pass).trim();
+            const tahaPass = validPasswords.taha !== undefined ? String(validPasswords.taha).trim() : null;
+            const sudePass = validPasswords.sude !== undefined ? String(validPasswords.sude).trim() : null;
+
+            if (tahaPass && inputPass === tahaPass) {
                 matchedUser = "TAHA Şifresi";
-            } else if (pass === validPasswords.sude) {
+            } else if (sudePass && inputPass === sudePass) {
                 matchedUser = "SUDE Şifresi";
             }
 
@@ -215,7 +217,8 @@
             loginBtn.innerText = "Devam Et";
             loginBtn.disabled = false;
         }).catch(err => {
-            alert("Bağlantı hatası oluştu!");
+            console.error(err);
+            alert("Bağlantı veya İzin Hatası! Lütfen Firebase Rules kısmını kontrol edin.");
             loginBtn.innerText = "Devam Et";
             loginBtn.disabled = false;
         });
